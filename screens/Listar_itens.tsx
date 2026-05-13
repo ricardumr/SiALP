@@ -48,6 +48,7 @@ export default function Listar_itens() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState<"actions" | "edit">("actions");
   const [exportando, setExportando] = useState(false);
+  const [filteredCache, setFilteredCache] = useState<Item[] | null>(null);
   const pageCursorsRef = React.useRef<Record<number, PageCursor>>({});
   const columnWidths = {
     acoes: 150,
@@ -105,11 +106,8 @@ export default function Listar_itens() {
     setLastDoc(null);
     setFirstDoc(null);
     setCurrentPage(1);
-<<<<<<< HEAD
     setFilteredCache(null);
     pageCursorsRef.current = {};
-=======
->>>>>>> 572ec0a (foi a camera)
     carregarTotal();
     carregarPagina("first");
   }, [filterPatrimonio, filterSala, bancoId]);
@@ -121,6 +119,10 @@ export default function Listar_itens() {
       });
     }
   }, [carregarSalas, filterModalVisible, modalMode, modalVisible]);
+
+  const usarFiltroLocal = () => false;
+
+  const carregarFiltradoLocal = async (): Promise<Item[]> => [];
 
   const montarQuery = () => {
     const sala = filterSala.trim();

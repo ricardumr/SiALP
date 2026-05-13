@@ -76,10 +76,8 @@ export default function Conferencia_inventario() {
   const [observationDraft, setObservationDraft] = useState("");
   const [pendingStatusItemKey, setPendingStatusItemKey] = useState<string | null>(null);
   const [pendingStatusValue, setPendingStatusValue] = useState<string | null>(null);
-<<<<<<< HEAD
   const restrictedSalaMessage =
     "Esta sala está vinculada a outro responsável. Se você precisar acesso, fale com um administrador.";
-=======
   const [scanModalVisible, setScanModalVisible] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
   const [, requestCameraPermission] = useCameraPermissions();
@@ -97,7 +95,6 @@ export default function Conferencia_inventario() {
       manual: boolean;
     }>
   >([]);
->>>>>>> 572ec0a (foi a camera)
   const currentUid = auth.currentUser?.uid ?? "";
   const normalizeValue = React.useCallback(
     (value: string) => String(value || "").trim().toLowerCase(),
@@ -718,12 +715,9 @@ export default function Conferencia_inventario() {
     safeGoBack,
     admLoaded,
     isOwnerValueFromCurrentUser,
-<<<<<<< HEAD
     restrictedSalaMessage,
-=======
     visibleSalaNames,
     normalizeValue,
->>>>>>> 29f65e4 (csd)
   ]);
 
   const renderHeader = () => (

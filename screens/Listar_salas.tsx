@@ -32,7 +32,8 @@ export default function Listar_salas() {
   const [bancoId, setBancoId] = useState<string | null>(null);
   const [editSala, setEditSala] = useState<Partial<Sala> | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState<"actions" | "edit">("actions");
+  const [modalMode, setModalMode] = useState<"actions" | "edit" | "delete-options">("actions");
+  const [deleteOptions, setDeleteOptions] = useState<{ sala: Sala; itensCount: number } | null>(null);
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroUsuario, setFiltroUsuario] = useState("");
   const columnWidths = {
@@ -99,6 +100,17 @@ export default function Listar_salas() {
     return match?.nome ?? usuarioId;
   };
 
+  const contarItensNaSala = async (salaId: string): Promise<number> => {
+    if (!bancoId) return 0;
+    const query = firestore
+      .collection("Usuario")
+      .doc(bancoId)
+      .collection("Item")
+      .where("sala", "==", salaId);
+    const snapshot = await query.get();
+    return snapshot.size;
+  };
+
   const carregarTotal = async () => {
     try {
       if (!bancoId) return;
@@ -159,49 +171,83 @@ export default function Listar_salas() {
   };
 
   const excluir = async (sala: any) => {
-    Alert.alert(
-      "Confirmar exclusão",
-      "Tem certeza que deseja excluir esta sala?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          onPress: async () => {
-            const ownerUid = (sala as any).ownerUid || bancoId || currentUid;
-            await firestore
-              .collection("Usuario")
-              .doc(ownerUid)
-              .collection("Sala")
-              .doc(sala.key || sala.id)
-              .delete()
-              .then(() => {
-                alert("Excluído com sucesso!");
-                setSalas((prev) =>
-                  prev.filter(
-                    (s) => (s as any).key !== (sala.key || sala.id)
-                  )
-                );
-                setTotal((prev) => (prev === null ? null : Math.max(0, prev - 1)));
-              });
+    const itensCount = await contarItensNaSala(sala.key || sala.id);
+    if (itensCount > 0) {
+      setDeleteOptions({ sala, itensCount });
+      setModalMode("delete-options");
+      setModalVisible(true);
+    } else {
+      Alert.alert(
+        "Confirmar exclusão",
+        "Tem certeza que deseja excluir esta sala?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Excluir",
+            onPress: () => executarExclusao(sala, false),
+            style: "destructive",
           },
-          style: "destructive",
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
-  const editar = (item: Sala) => {
-    setEditSala({
-      ...item,
-      usuario: resolveUsuarioId((item as any).usuario),
-    });
-    setModalMode("edit");
-    setModalVisible(true);
+  const executarExclusao = async (sala: any, deletarItens: boolean, novaSalaId?: string) => {
+    const ownerUid = (sala as any).ownerUid || bancoId || currentUid;
+    const salaId = sala.key || sala.id;
+
+    try {
+      if (deletarItens) {
+        // Deletar todos os itens da sala
+        const itensQuery = firestore
+          .collection("Usuario")
+          .doc(ownerUid)
+          .collection("Item")
+          .where("sala", "==", salaId);
+        const itensSnapshot = await itensQuery.get();
+        const batch = firestore.batch();
+        itensSnapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      } else if (novaSalaId) {
+        // Transferir itens para outra sala
+        const itensQuery = firestore
+          .collection("Usuario")
+          .doc(ownerUid)
+          .collection("Item")
+          .where("sala", "==", salaId);
+        const itensSnapshot = await itensQuery.get();
+        const batch = firestore.batch();
+        itensSnapshot.docs.forEach((doc) => {
+          batch.update(doc.ref, { sala: novaSalaId });
+        });
+        await batch.commit();
+      }
+
+      // Excluir a sala
+      await firestore
+        .collection("Usuario")
+        .doc(ownerUid)
+        .collection("Sala")
+        .doc(salaId)
+        .delete();
+
+      alert("Sala excluída com sucesso!");
+      setSalas((prev) =>
+        prev.filter((s) => (s as any).key !== salaId)
+      );
+      setTotal((prev) => (prev === null ? null : Math.max(0, prev - 1)));
+      fecharModal();
+    } catch (error) {
+      alert("Erro ao excluir sala: " + error.message);
+    }
   };
 
   const fecharModal = () => {
     setModalVisible(false);
     setEditSala(null);
+    setDeleteOptions(null);
     setModalMode("actions");
   };
 
@@ -253,38 +299,35 @@ export default function Listar_salas() {
     });
   }, [salas, filtroNome, filtroUsuario]);
 
-  const renderColumn = (
-    headerKey: string,
-    renderValue: (sala: Sala) => React.ReactNode,
-    columnStyle?: object,
-    withDivider?: boolean
-  ) => (
-    <View
-      style={[
-        { width: 160, alignSelf: "stretch" },
-        columnStyle,
-        withDivider && styles.tableColumnDivider,
-      ]}
-    >
-      {salasFiltradas.map((sala, index) => (
-        <View
-          style={[
-            styles.tableColumnCell,
-            styles.tableColumnDivider,
-            { width: columnWidths.usuario },
-          ]}
-        >
-          <Text style={[styles.tableDataCell, styles.tableColumnText]} numberOfLines={1}>
-            {getUsuarioLabel(String((item as any).usuario ?? ""))}
-          </Text>
-        </View>
-
-        <View style={[styles.tableColumnCell, { width: columnWidths.acoes }]}>
-          <TouchableOpacity onPress={() => detalhar(item)} style={styles.tableActionButton}>
-            <Text style={styles.tableActionButtonText}>Detalhar</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+const renderRow = ({ item }: { item: Sala }) => (
+    <View style={{ flexDirection: "row" }}>
+      <View
+        style={[
+          styles.tableColumnCell,
+          styles.tableColumnDivider,
+          { width: columnWidths.nome },
+        ]}
+      >
+        <Text style={[styles.tableDataCell, styles.tableColumnText]} numberOfLines={1}>
+          {item.nome ?? "-"}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.tableColumnCell,
+          styles.tableColumnDivider,
+          { width: columnWidths.usuario },
+        ]}
+      >
+        <Text style={[styles.tableDataCell, styles.tableColumnText]} numberOfLines={1}>
+          {getUsuarioLabel(String((item as any).usuario ?? ""))}
+        </Text>
+      </View>
+      <View style={[styles.tableColumnCell, { width: columnWidths.acoes }]}> 
+        <TouchableOpacity onPress={() => detalhar(item)} style={styles.tableActionButton}>
+          <Text style={styles.tableActionButtonText}>Detalhar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -337,6 +380,60 @@ export default function Listar_salas() {
                   onPress={fecharModal}
                 >
                   <Text style={styles.secondButtonText}>Fechar</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : modalMode === "delete-options" ? (
+            <>
+              <Text style={[styles.title, { marginBottom: 12 }]}>
+                Excluir Sala
+              </Text>
+              <Text style={{ marginBottom: 12 }}>
+                Esta sala possui {deleteOptions?.itensCount} item(s). O que deseja fazer?
+              </Text>
+              <View style={{ gap: 12 }}>
+                <TouchableOpacity
+                  style={styles.primaryButton}
+                  onPress={() => {
+                    Alert.alert(
+                      "Transferir Itens",
+                      "Selecione a sala para onde transferir os itens:",
+                      salas
+                        .filter((s) => s.id !== deleteOptions?.sala.id)
+                        .map((sala) => ({
+                          text: sala.nome,
+                          onPress: () => executarExclusao(deleteOptions!.sala, false, sala.id),
+                        }))
+                        .concat([{ text: "Cancelar", style: "cancel" }])
+                    );
+                  }}
+                >
+                  <Text style={styles.primaryButtonText}>Transferir Itens</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.dangerButton}
+                  onPress={() => {
+                    Alert.alert(
+                      "Confirmar Exclusão",
+                      `Tem certeza que deseja excluir a sala "${deleteOptions?.sala.nome}" e todos os ${deleteOptions?.itensCount} item(s) nela?`,
+                      [
+                        { text: "Cancelar", style: "cancel" },
+                        {
+                          text: "Excluir Tudo",
+                          onPress: () => executarExclusao(deleteOptions!.sala, true),
+                          style: "destructive",
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.dangerButtonText}>Excluir Itens Também</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.secondButton}
+                  onPress={fecharModal}
+                >
+                  <Text style={styles.secondButtonText}>Cancelar</Text>
                 </TouchableOpacity>
               </View>
             </>

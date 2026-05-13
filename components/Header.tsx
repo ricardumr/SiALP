@@ -30,8 +30,8 @@ export default function Header({
       return;
     }
 
-    if (showMenu && nav?.openDrawer) {
-      nav.openDrawer();
+    if (showMenu) {
+      navigation.dispatch(DrawerActions.openDrawer());
     }
   };
 
