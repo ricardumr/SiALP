@@ -1,114 +1,118 @@
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
-  View,
-  TouchableOpacity,
-  KeyboardAvoidingView,
   TextInput,
-  Platform,
-  SafeAreaView,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useState } from "react";
-import { auth } from "../firebase";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { ClipboardCheck, Mail, Lock, Eye, Shield } from "lucide-react-native";
+import { Box, Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react-native";
+import { auth } from "../firebase";
 
 export default function Login() {
-  const navigation = useNavigation();
-
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const logar = () => {
     auth
       .signInWithEmailAndPassword(email, senha)
-      .then((userCredentials) => {
-        navigation.replace("Menu");
-      })
+      .then(() => navigation.replace("Menu"))
       .catch((erro) => alert(erro.message));
   };
 
-  const loginColors = {
-    background: "#052e36",
-    card: "#0b3439",
-    accent: "#3ef7ad",
-    text: "#f6fbff",
-    border: "rgba(255,255,255,0.16)",
-    placeholder: "rgba(255,255,255,0.72)",
-  };
-
   return (
-    <SafeAreaView style={[localStyles.screen, { backgroundColor: loginColors.background }]}> 
-      <StatusBar style="light" backgroundColor={loginColors.background} />
-      <View style={localStyles.backgroundLayer}>
-        <View style={localStyles.backgroundCircle1} />
-        <View style={localStyles.backgroundCircle2} />
+    <SafeAreaView style={styles.screen}>
+      <StatusBar style="light" />
+
+      <View style={styles.bgLayer}>
+        <View style={styles.glowTopRight} />
+        <View style={styles.glowBottom} />
       </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={localStyles.flex}
+        style={styles.flex}
       >
-        <View style={localStyles.content}>
-          <View style={localStyles.brandBox}>
-            <Text style={localStyles.brandTitle}>SiALP</Text>
-            <Text style={localStyles.brandSubtitle}>
-              Sistema Automatizado de Levantamento Patrimonial
+        <View style={styles.content}>
+          <View style={styles.brandWrap}>
+            <View style={styles.logoRing}>
+              <Box color="#1af7bb" size={42} />
+            </View>
+            <Text style={styles.brandTitle}>SiALP</Text>
+            <Text style={styles.brandSubtitle}>
+              Sistema Automatizado{"\n"}levantamento patrimonial
             </Text>
           </View>
 
-          <View style={[localStyles.card, { backgroundColor: loginColors.card }]}>
-            <View style={localStyles.cardIconWrapper}>
-              <View style={localStyles.cardIcon}> 
-                <ClipboardCheck color={loginColors.accent} size={30} />
-              </View>
-            </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Login</Text>
+            <Text style={styles.cardSubtitle}>Acesse sua conta para continuar</Text>
 
-            <Text style={localStyles.cardTitle}>Login</Text>
-
-            <View style={localStyles.field}>
-              <View style={localStyles.fieldIconBox}>
-                <Mail color={loginColors.accent} size={18} />
+            <View style={styles.inputBox}>
+              <View style={styles.inputIconBg}>
+                <Mail color="#19f5b8" size={20} />
               </View>
               <TextInput
+                style={styles.input}
                 placeholder="Email"
-                placeholderTextColor={loginColors.placeholder}
+                placeholderTextColor="rgba(227,237,240,0.72)"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                style={[localStyles.input, { color: loginColors.text }]}
                 value={email}
                 onChangeText={setEmail}
               />
             </View>
 
-            <View style={localStyles.field}>
-              <View style={localStyles.fieldIconBox}>
-                <Lock color={loginColors.accent} size={18} />
+            <View style={styles.inputBox}>
+              <View style={styles.inputIconBg}>
+                <Lock color="#19f5b8" size={20} />
               </View>
               <TextInput
+                style={styles.input}
                 placeholder="Senha"
-                placeholderTextColor={loginColors.placeholder}
-                secureTextEntry
-                style={[localStyles.input, { color: loginColors.text }]}
+                placeholderTextColor="rgba(227,237,240,0.72)"
+                secureTextEntry={!mostrarSenha}
                 value={senha}
                 onChangeText={setSenha}
               />
-              <TouchableOpacity style={localStyles.eyeButton} activeOpacity={0.7}>
-                <Eye color={loginColors.text} size={18} />
+              <TouchableOpacity
+                onPress={() => setMostrarSenha((v) => !v)}
+                style={styles.eyeButton}
+                activeOpacity={0.8}
+              >
+                {mostrarSenha ? (
+                  <EyeOff color="rgba(227,237,240,0.8)" size={24} />
+                ) : (
+                  <Eye color="rgba(227,237,240,0.8)" size={24} />
+                )}
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[localStyles.primaryButton, { backgroundColor: loginColors.accent }]}
-              onPress={logar}
-            >
-              <Text style={localStyles.primaryButtonText}>Acessar</Text>
+            <TouchableOpacity style={styles.btnPrimary} onPress={logar} activeOpacity={0.9}>
+              <Text style={styles.btnPrimaryText}>Acessar</Text>
             </TouchableOpacity>
-          </View>
 
-          <View style={localStyles.footer}>
-            <Shield color={loginColors.accent} size={16} />
-            <Text style={localStyles.footerText}>Acesso seguro e protegido</Text>
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>ou</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            <TouchableOpacity
+              style={styles.btnOutline}
+              onPress={() => navigation.navigate("Cadastro usuário")}
+              activeOpacity={0.9}
+            >
+              <UserRound color="#19f5b8" size={28} />
+              <Text style={styles.btnOutlineText}>Criar conta</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -116,149 +120,157 @@ export default function Login() {
   );
 }
 
-const localStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: "#032f39",
   },
   flex: {
     flex: 1,
   },
+  bgLayer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#032f39",
+  },
   content: {
     flex: 1,
-    width: "100%",
-    paddingHorizontal: 24,
-    justifyContent: "flex-start",
     alignItems: "center",
-    paddingTop: 96,
+    paddingHorizontal: 28,
+    paddingTop: 36,
+    paddingBottom: 24,
   },
-  backgroundLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  backgroundCircle1: {
-    position: "absolute",
-    top: -40,
-    right: -50,
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "rgba(62, 247, 173, 0.12)",
-  },
-  backgroundCircle2: {
-    position: "absolute",
-    bottom: -80,
-    left: -60,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-  },
-  brandBox: {
-    marginTop: 108,
+  brandWrap: {
     alignItems: "center",
-    gap: 8,
+    marginTop: 60,
+    marginBottom: 30,
+  },
+  logoRing: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 8,
+    borderColor: "rgba(14,180,170,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(12,75,80,0.45)",
+    marginBottom: 1,
   },
   brandTitle: {
-    fontSize: 62,
+    fontSize: 52,
+    color: "#edf3f5",
     fontWeight: "900",
-    color: "#fff",
-    letterSpacing: 4,
+    letterSpacing: 0.5,
   },
   brandSubtitle: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.84)",
+    marginTop: 6,
+    color: "rgba(217,231,235,0.82)",
+    fontSize: 14,
     textAlign: "center",
     lineHeight: 22,
-    maxWidth: 340,
   },
   card: {
     width: "100%",
-    maxWidth: 540,
-    minHeight: 560,
     borderRadius: 26,
-    padding: 40,
-    paddingTop: 44,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.24,
-    shadowRadius: 38,
-    elevation: 14,
-    alignItems: "center",
-    marginTop: -28,
-    marginBottom: 30,
-  },
-  cardIconWrapper: {
-    marginTop: -58,
-    marginBottom: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 30,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1.2,
+    borderColor: "rgba(190,225,227,0.28)",
+    backgroundColor: "rgba(4,48,58,0.67)",
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 16,
+    shadowColor: "#001216",
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 24,
+    elevation: 16,
   },
   cardTitle: {
-    fontSize: 34,
-    color: "#fff",
+    textAlign: "center",
+    color: "#eef4f6",
+    fontSize: 46,
     fontWeight: "800",
-    marginBottom: 24,
   },
-  field: {
-    width: "100%",
+  cardSubtitle: {
+    textAlign: "center",
+    color: "rgba(221,232,236,0.8)",
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  inputBox: {
+    minHeight: 66,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "rgba(190,225,227,0.4)",
+    backgroundColor: "rgba(2,34,42,0.45)",
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 16,
-    minHeight: 60,
+    marginBottom: 16,
   },
-  fieldIconBox: {
-    width: 38,
+  inputIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(8,94,97,0.42)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
   input: {
     flex: 1,
-    height: 58,
-    fontSize: 16,
-    color: "#fff",
+    color: "#eef4f6",
+    fontSize: 14,
+    paddingVertical: 6,
   },
   eyeButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  primaryButton: {
-    width: "100%",
-    marginTop: 10,
-    paddingVertical: 18,
+  btnPrimary: {
+    marginTop: 4,
+    minHeight: 62,
     borderRadius: 20,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1de3ae",
   },
-  primaryButtonText: {
-    color: "#052e36",
-    fontSize: 18,
-    fontWeight: "900",
+  btnPrimaryText: {
+    color: "#001c21",
+    fontSize: 16,
+    fontWeight: "800",
   },
-  footer: {
+  orRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 34,
+    marginVertical: 18,
   },
-  footerText: {
-    color: "rgba(255,255,255,0.86)",
-    fontSize: 14,
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(190,225,227,0.4)",
+  },
+  orText: {
+    color: "rgba(221,232,236,0.82)",
+    fontSize: 16,
+    fontWeight: "700",
+    marginHorizontal: 14,
+  },
+  btnOutline: {
+    minHeight: 62,
+    borderRadius: 20,
+    borderWidth: 1.4,
+    borderColor: "#1de3ae",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+  btnOutlineText: {
+    color: "#1de3ae",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

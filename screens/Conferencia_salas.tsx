@@ -8,8 +8,9 @@ import { Sala } from "../model/Sala";
 import { Usuario } from "../model/Usuario";
 import { getSalaStatus } from "../model/conferenciaProgress";
 import { TextInput, Button as PaperButton } from "react-native-paper";
-import Header from "../components/Header";
 import { getCurrentUserContext } from "../model/userContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ArrowLeft, Search } from "lucide-react-native";
 
 export default function Conferencia_salas() {
   const navigation = useNavigation();
@@ -19,6 +20,9 @@ export default function Conferencia_salas() {
   const [, forceTick] = useState(0);
   const [adm, setAdm] = useState(false);
   const [admLoaded, setAdmLoaded] = useState(false);
+  const [bancoId, setBancoId] = useState<string | null>(null);
+  const [currentUserNome, setCurrentUserNome] = useState("");
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [adminUids, setAdminUids] = useState<string[]>([]);
   const currentUid = auth.currentUser?.uid ?? "";
   const didMigrateRef = React.useRef(false);
@@ -32,21 +36,21 @@ export default function Conferencia_salas() {
 
   useEffect(() => {
     let unsub: any;
-
-    firestore
-      .collection("Usuario")
-      .doc(uid)
-      .get()
-      .then((doc) => {
-        if (doc.exists) {
-          setAdm(!!doc.data()?.adm);
-        }
+    getCurrentUserContext().then((context) => {
+      if (!context) {
         setAdmLoaded(true);
-        unsub = firestore
-          .collection("Usuario")
-          .doc(context.bancoId)
-          .collection("Sala")
-          .onSnapshot((querySnapshot) => {
+        return;
+      }
+      setBancoId(context.bancoId ?? null);
+      setAdm(!!context.adm);
+      setCurrentUserNome(context.nome ?? "");
+      setCurrentUserEmail(context.email ?? "");
+      setAdmLoaded(true);
+      unsub = firestore
+        .collection("Usuario")
+        .doc(context.bancoId)
+        .collection("Sala")
+        .onSnapshot((querySnapshot) => {
           const salasArray: Sala[] = [];
           querySnapshot.forEach((docSnap) => {
             salasArray.push({
@@ -56,7 +60,7 @@ export default function Conferencia_salas() {
           });
           setSalas(salasArray);
         });
-      });
+    });
 
     return () => {
       if (unsub) unsub();
@@ -295,36 +299,47 @@ export default function Conferencia_salas() {
   };
 
   return (
-    <View style={[styles.container, localStyles.screen]}>
-      <View
-        style={{
-          marginTop: 120,
-          width: "100%",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Header title="Conferência de Inventário" />
+    <SafeAreaView style={localStyles.screen}>
+      <View style={localStyles.bgTopGlow} />
+      <View style={localStyles.bgBottomGlow} />
+
+      <View style={localStyles.topRow}>
+        <TouchableOpacity
+          style={localStyles.backButton}
+          onPress={() => {
+            // @ts-ignore
+            if (navigation?.canGoBack && navigation.canGoBack()) navigation.goBack();
+            // @ts-ignore
+            else navigation.openDrawer?.();
+          }}
+        >
+          <ArrowLeft color="#e8f2f4" size={28} />
+        </TouchableOpacity>
+        <Text style={localStyles.screenTitle}>Conferência de Inventário</Text>
       </View>
 
       <View style={localStyles.headerCard}>
         <Text style={localStyles.headerSubtitle}>
           Selecione uma sala para conferir
         </Text>
-        <TextInput
-          mode="outlined"
-          label="Filtrar sala"
-          style={styles.inputOutlined}
-          outlineColor={theme.colors.border}
-          activeOutlineColor={theme.colors.accent}
-          textColor="#fff"
-          value={filtroSala}
-          onChangeText={setFiltroSala}
-        />
+        <View style={localStyles.searchWrap}>
+          <Search color="#aebec5" size={26} />
+          <TextInput
+            mode="flat"
+            placeholder="Filtrar sala"
+            placeholderTextColor="#9db1b8"
+            style={localStyles.searchInput}
+            underlineColor="transparent"
+            activeUnderlineColor="transparent"
+            textColor="#eaf4f6"
+            value={filtroSala}
+            onChangeText={setFiltroSala}
+          />
+        </View>
       </View>
 
       <FlatList
-        data={salas.filter((s) =>
+        data={eligibleSalas.filter((s) =>
           String(s.nome || "")
             .toLowerCase()
             .includes(filtroSala.trim().toLowerCase())
@@ -332,7 +347,8 @@ export default function Conferencia_salas() {
         keyExtractor={(item) => item.id}
         renderItem={renderSala}
         style={{ width: "92%", marginTop: 16 }}
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        contentContainerStyle={{ paddingBottom: 28 }}
         removeClippedSubviews
         ListFooterComponent={
           <View style={{ marginTop: 16, marginBottom: 20 }}>
@@ -362,92 +378,144 @@ export default function Conferencia_salas() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const localStyles = StyleSheet.create({
   screen: {
+    flex: 1,
     backgroundColor: theme.colors.background,
+    alignItems: "center",
+  },
+  bgTopGlow: {
+    position: "absolute",
+    top: -120,
+    left: -110,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: "rgba(29,164,152,0.2)",
+  },
+  bgBottomGlow: {
+    position: "absolute",
+    bottom: -140,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: "rgba(14,127,145,0.2)",
+  },
+  topRow: {
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  backButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "rgba(16,98,102,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(115,200,197,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  screenTitle: {
+    color: "#edf4f5",
+    fontSize: 24,
+    fontWeight: "800",
   },
   headerCard: {
     width: "92%",
-    marginTop: 12,
-    backgroundColor: theme.colors.drawer,
+    marginTop: 4,
+    backgroundColor: "rgba(8,71,79,0.5)",
+    borderWidth: 1,
+    borderColor: "rgba(126,208,209,0.25)",
     borderRadius: 18,
     padding: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 6,
   },
   headerSubtitle: {
-    color: "#cfe0dc",
-    fontSize: 14,
+    color: "#d6e6e8",
+    fontSize: 16,
     marginBottom: 12,
   },
-  listCard: {
-    backgroundColor: "#f3f4f3",
+  searchWrap: {
+    minHeight: 64,
+    borderWidth: 1,
+    borderColor: "rgba(150,214,215,0.35)",
     borderRadius: 16,
-    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(3,50,57,0.45)",
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: "transparent",
+    marginLeft: 8,
+    fontSize: 18,
+  },
+  listCard: {
+    backgroundColor: "rgba(6,64,73,0.48)",
+    borderWidth: 1,
+    borderColor: "rgba(118,199,200,0.3)",
+    borderRadius: 16,
+    paddingVertical: 18,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   cardTitle: {
-    color: "#1f2f2b",
+    color: "#edf4f5",
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: 18,
   },
   statusPill: {
     alignSelf: "flex-start",
-    marginTop: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    marginTop: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
     borderRadius: 999,
   },
   statusPillText: {
     color: "#ffffff",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
   },
   pillPending: {
-    backgroundColor: "#c9a84a",
+    backgroundColor: "#c9a02f",
   },
   pillProgress: {
-    backgroundColor: "#6fa255",
+    backgroundColor: "#5d9f53",
   },
   pillDone: {
     backgroundColor: "#2f8b73",
   },
   conferButton: {
-    backgroundColor: "#2f8b73",
+    backgroundColor: "#2bbf84",
+    minWidth: 120,
+    minHeight: 66,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 2,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   conferButtonText: {
     color: "#ffffff",
     fontWeight: "800",
-    fontSize: 16,
+    fontSize: 17,
   },
   finishButton: {
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   finishButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     color: "#ffffff",
   },

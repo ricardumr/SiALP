@@ -2,6 +2,16 @@ import * as React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { auth, firestore } from "../firebase";
+import {
+  ClipboardCheck,
+  DoorOpen,
+  House,
+  List,
+  ListChecks,
+  PackagePlus,
+  UserPlus,
+  Warehouse,
+} from "lucide-react-native";
 
 import Home from "./Home";
 import Cadastro_item from "./Cadastro_item";
@@ -34,35 +44,92 @@ export default function Menu() {
       initialRouteName="Página Inicial"
       screenOptions={{
         headerShown: false,
-        drawerStyle: { backgroundColor: theme.colors.drawer },
+        drawerStyle: {
+          backgroundColor: theme.colors.drawer,
+          width: "84%",
+          borderTopRightRadius: 28,
+          borderBottomRightRadius: 28,
+        },
         drawerActiveTintColor: theme.colors.accent,
-        drawerInactiveTintColor: theme.colors.textMuted,
-        drawerLabelStyle: { fontSize: 14, fontWeight: "500" },
-        drawerItemStyle: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+        drawerInactiveTintColor: "#d8e3e1",
+        drawerLabelStyle: { fontSize: 17, fontWeight: "500", marginLeft: -8 },
+        drawerItemStyle: { borderRadius: 14, marginHorizontal: 8 },
+        drawerActiveBackgroundColor: "rgba(40,167,146,0.18)",
       }}
       drawerContent={(props) => <CustomDrawer {...props} />}
     >
-      <Drawer.Screen name="Página Inicial" component={Home} />
+      <Drawer.Screen
+        name="Página Inicial"
+        component={Home}
+        options={{
+          drawerIcon: ({ color, size }) => <House color={color} size={size} />,
+        }}
+      />
       {adm ? (
         <>
-          <Drawer.Screen name="Conferencia de inventário" component={Conferencia_salas}/>
+          <Drawer.Screen
+            name="Conferencia de inventário"
+            component={Conferencia_salas}
+            options={{
+              drawerIcon: ({ color, size }) => <ClipboardCheck color={color} size={size} />,
+            }}
+          />
           <Drawer.Screen
             name="Conferencia sala"
             component={Conferencia_inventario}
             options={{ drawerItemStyle: { display: "none" } }}
           />
-          <Drawer.Screen name="Cadastrar item" component={Cadastro_item} />
-          <Drawer.Screen name="Cadastrar sala" component={Cadastro_sala} />
-          <Drawer.Screen name="Cadastrar usuário" component={Cadastro_usuario}/>
-          <Drawer.Screen name="Lista itens" component={Listar_itens} />
-          <Drawer.Screen name="Lista salas" component={Listar_salas} />
-          <Drawer.Screen name="Lista de conferências" component={Lista_conferencias}/>
+          <Drawer.Screen
+            name="Cadastrar item"
+            component={Cadastro_item}
+            options={{
+              drawerIcon: ({ color, size }) => <PackagePlus color={color} size={size} />,
+            }}
+          />
+          <Drawer.Screen
+            name="Cadastrar sala"
+            component={Cadastro_sala}
+            options={{
+              drawerIcon: ({ color, size }) => <DoorOpen color={color} size={size} />,
+            }}
+          />
+          <Drawer.Screen
+            name="Cadastrar usuário"
+            component={Cadastro_usuario}
+            options={{
+              drawerIcon: ({ color, size }) => <UserPlus color={color} size={size} />,
+            }}
+          />
+          <Drawer.Screen
+            name="Lista itens"
+            component={Listar_itens}
+            options={{
+              drawerIcon: ({ color, size }) => <List color={color} size={size} />,
+            }}
+          />
+          <Drawer.Screen
+            name="Lista salas"
+            component={Listar_salas}
+            options={{
+              drawerIcon: ({ color, size }) => <Warehouse color={color} size={size} />,
+            }}
+          />
+          <Drawer.Screen
+            name="Lista de conferências"
+            component={Lista_conferencias}
+            options={{
+              drawerIcon: ({ color, size }) => <ListChecks color={color} size={size} />,
+            }}
+          />
         </>
       ) : (
         <>
           <Drawer.Screen
             name="Conferencia de inventário"
             component={Conferencia_salas}
+            options={{
+              drawerIcon: ({ color, size }) => <ClipboardCheck color={color} size={size} />,
+            }}
           />
           <Drawer.Screen
             name="Conferencia sala"

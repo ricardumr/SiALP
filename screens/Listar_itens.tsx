@@ -8,8 +8,8 @@ import {
   Modal,
   FlatList,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import styles, { theme } from "../estilo";
-import Header from "../components/Header";
 import { useState, useEffect } from "react";
 import { auth, firestore } from "../firebase";
 import { TextInput } from "react-native-paper";
@@ -21,6 +21,9 @@ import * as Sharing from "expo-sharing";
 import * as XLSX from "xlsx";
 import firebase from "firebase/compat/app";
 import { getCurrentUserContext } from "../model/userContext";
+import { useNavigation } from "@react-navigation/native";
+import { DrawerActions } from "@react-navigation/native";
+import { Building2, ChevronLeft, ChevronRight, Filter, ListChecks, Package } from "lucide-react-native";
 
 type PageCursor = {
   firstDoc: any;
@@ -28,6 +31,7 @@ type PageCursor = {
 };
 
 export default function Listar_itens() {
+  const navigation = useNavigation<any>();
   const [bancoId, setBancoId] = useState<string | null>(null);
   const [itens, setItens] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,19 +55,11 @@ export default function Listar_itens() {
   const [filteredCache, setFilteredCache] = useState<Item[] | null>(null);
   const pageCursorsRef = React.useRef<Record<number, PageCursor>>({});
   const columnWidths = {
-    acoes: 150,
-    nome: 180,
-    sala: 160,
-    patrimonio: 180,
-    estado: 160,
+    nome: 190,
+    sala: 190,
   };
   const pageSize = 50;
-  const totalWidth =
-    columnWidths.nome +
-    columnWidths.sala +
-    columnWidths.patrimonio +
-    columnWidths.estado +
-    columnWidths.acoes;
+  const totalWidth = columnWidths.nome + columnWidths.sala;
 
   const refItem = React.useMemo(
     () => (bancoId ? firestore.collection("Usuario").doc(bancoId).collection("Item") : null),
@@ -463,68 +459,64 @@ export default function Listar_itens() {
 
   const renderRow = React.useCallback(
     ({ item, index }: { item: Item; index: number }) => (
-      <View
-        style={[
-          { flexDirection: "row" },
-          index === itens.length - 1 && styles.tableLastRow,
-        ]}
+      <TouchableOpacity
+        onPress={() => detalhar(item)}
+        style={{
+          flexDirection: "row",
+          backgroundColor: "#f3f6f6",
+          borderBottomWidth: 1,
+          borderBottomColor: "#d8dfe0",
+          minHeight: 84,
+          alignItems: "center",
+        }}
       >
         <View
-          style={[
-            styles.tableColumnCell,
-            styles.tableColumnDivider,
-            { width: columnWidths.nome },
-          ]}
+          style={{
+            width: columnWidths.nome,
+            borderRightWidth: 1,
+            borderRightColor: "#dde5e7",
+            paddingHorizontal: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+          }}
         >
-          <Text style={[styles.tableDataCell, styles.tableColumnText]} numberOfLines={1}>
+          <View
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              backgroundColor: "#d7e8e5",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Package color="#158d73" size={18} />
+          </View>
+          <Text
+            style={{ color: "#13212d", fontSize: 14, fontWeight: "700", flex: 1 }}
+            numberOfLines={1}
+          >
             {item.nome}
           </Text>
         </View>
-
         <View
-          style={[
-            styles.tableColumnCell,
-            styles.tableColumnDivider,
-            { width: columnWidths.sala },
-          ]}
+          style={{
+            width: columnWidths.sala,
+            paddingHorizontal: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
         >
-          <Text style={[styles.tableDataCell, styles.tableColumnText]} numberOfLines={1}>
-            {item.sala}
+          <Text style={{ color: "#1e2a35", fontSize: 14, flex: 1 }} numberOfLines={1}>
+            {item.sala || "-"}
           </Text>
+          <ChevronRight color="#1a9d84" size={18} />
         </View>
-
-        <View
-          style={[
-            styles.tableColumnCell,
-            styles.tableColumnDivider,
-            { width: columnWidths.patrimonio },
-          ]}
-        >
-          <Text style={[styles.tableDataCell, styles.tableColumnText]} numberOfLines={1}>
-            {item.patrimonio}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.tableColumnCell,
-            styles.tableColumnDivider,
-            { width: columnWidths.estado },
-          ]}
-        >
-          <Text style={[styles.tableDataCell, styles.tableColumnText]}>
-            {item.estado}
-          </Text>
-        </View>
-
-        <View style={[styles.tableColumnCell, { width: columnWidths.acoes }]}>
-          <TouchableOpacity onPress={() => detalhar(item)} style={styles.tableActionButton}>
-            <Text style={styles.tableActionButtonText}>Detalhar</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </TouchableOpacity>
     ),
-    [columnWidths, itens.length, detalhar]
+    [columnWidths, detalhar]
   );
 
   const renderModal = () => (
@@ -681,16 +673,42 @@ export default function Listar_itens() {
   );
 
   return (
-    <View
-    style={[styles.container, {backgroundColor: theme.colors.background}]}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#053944" }}>
       {renderModal()}
-      <View style={{marginBottom: 120, width: "100%", alignItems: "center", justifyContent: "center" }}></View>
-      <Header title="Lista de Itens" />
+      <View style={{ flex: 1, backgroundColor: "#053944", paddingHorizontal: 16 }}>
+        <View style={{ marginTop: 22, marginBottom: 18, flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation?.canGoBack?.()) navigation.goBack();
+              else navigation.dispatch(DrawerActions.openDrawer());
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              backgroundColor: "rgba(11,101,100,0.35)",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
+            }}
+          >
+            <ChevronLeft color="#e7f0f2" size={24} />
+          </TouchableOpacity>
+          <Text style={{ color: "#edf4f5", fontSize: 24, fontWeight: "800" }}>Lista de Itens</Text>
+        </View>
 
-      <View style={{ width: "92%", marginTop: 12, marginBottom: 12 }}>
         <TouchableOpacity
-          style={styles.secondButton}
+          style={{
+            width: "100%",
+            borderRadius: 18,
+            backgroundColor: "#eef2f3",
+            minHeight: 58,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            marginBottom: 14,
+            gap: 10,
+          }}
           onPress={() => {
             setDraftSala(filterSala);
             setDraftPatrimonio(filterPatrimonio);
@@ -698,9 +716,9 @@ export default function Listar_itens() {
             setFilterModalVisible(true);
           }}
         >
-          <Text style={styles.secondButtonText}>Filtrar</Text>
+          <Filter color="#13886f" size={20} />
+          <Text style={{ color: "#13886f", fontSize: 17, fontWeight: "700" }}>Filtrar</Text>
         </TouchableOpacity>
-      </View>
 
       <Modal visible={filterModalVisible} transparent animationType="fade">
         <View
@@ -824,91 +842,51 @@ export default function Listar_itens() {
         </View>
       </Modal>
       
-      {itens.length === 0 ? (
-        <View style={styles.tableEmptyContainer}>
-          <Text style={styles.tableEmptyText}>Nenhum item cadastrado</Text>
-        </View>
-      ) : (
-        <View style={{ width: "100%" }}>
-          <ScrollView
-            horizontal
-            style={styles.tableContainer}
-            showsHorizontalScrollIndicator={true}
+        {itens.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <Text style={{ color: "#e7f0f2", fontSize: 15 }}>Nenhum item cadastrado</Text>
+          </View>
+        ) : (
+          <View
+            style={{
+              borderRadius: 18,
+              overflow: "hidden",
+              borderWidth: 1,
+              borderColor: "rgba(157,213,215,0.35)",
+              backgroundColor: "#e9efef",
+              marginBottom: 10,
+            }}
           >
-            <View style={{ minWidth: 920 }}>
-              <View style={{ flexDirection: "row" }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ minWidth: totalWidth }}>
+                <View style={{ flexDirection: "row", backgroundColor: "#094f52" }}>
                 <View
-                  style={[
-                    styles.tableHeaderRow,
-                    {
-                      width: columnWidths.nome,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderTopRightRadius: 0,
-                    },
-                    styles.tableColumnDivider,
-                  ]}
+                  style={{
+                    width: columnWidths.nome,
+                    minHeight: 56,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRightWidth: 1,
+                    borderRightColor: "rgba(190,225,227,0.45)",
+                    flexDirection: "row",
+                    gap: 8,
+                  }}
                 >
-                  <Text style={styles.tableHeaderText}>Nome</Text>
+                  <Package color="#22d7ae" size={18} />
+                  <Text style={{ color: "#eef4f6", fontSize: 16, fontWeight: "700" }}>Nome</Text>
                 </View>
                 <View
-                  style={[
-                    styles.tableHeaderRow,
-                    {
-                      width: columnWidths.sala,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderTopLeftRadius: 0,
-                      borderTopRightRadius: 0,
-                      marginLeft: 0,
-                    },
-                    styles.tableColumnDivider,
-                  ]}
+                  style={{
+                    width: columnWidths.sala,
+                    minHeight: 56,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexDirection: "row",
+                    gap: 8,
+                  }}
                 >
-                  <Text style={styles.tableHeaderText}>Sala</Text>
-                </View>
-                <View
-                  style={[
-                    styles.tableHeaderRow,
-                    {
-                      width: columnWidths.patrimonio,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderTopLeftRadius: 0,
-                      borderTopRightRadius: 0,
-                    },
-                    styles.tableColumnDivider,
-                  ]}
-                >
-                  <Text style={styles.tableHeaderText}>Patrimônio</Text>
-                </View>
-                <View
-                  style={[
-                    styles.tableHeaderRow,
-                    {
-                      width: columnWidths.estado,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderTopLeftRadius: 0,
-                      borderTopRightRadius: 0,
-                    },
-                    styles.tableColumnDivider,
-                  ]}
-                >
-                  <Text style={styles.tableHeaderText}>Estado</Text>
-                </View>
-                <View
-                  style={[
-                    styles.tableHeaderRow,
-                    {
-                      width: columnWidths.acoes,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderTopLeftRadius: 0,
-                    },
-                  ]}
-                >
-                  <Text style={styles.tableHeaderText}>Ações</Text>
+                  <Building2 color="#22d7ae" size={18} />
+                  <Text style={{ color: "#eef4f6", fontSize: 16, fontWeight: "700" }}>Sala</Text>
                 </View>
               </View>
 
@@ -916,7 +894,7 @@ export default function Listar_itens() {
                 data={itens}
                 keyExtractor={(item, index) => String((item as any).key || item.id || index)}
                 renderItem={renderRow}
-                style={{ maxHeight: "65%" }}
+                style={{ maxHeight: 420 }}
                 contentContainerStyle={{ flexGrow: 1 }}
                 nestedScrollEnabled
                 showsVerticalScrollIndicator
@@ -924,147 +902,69 @@ export default function Listar_itens() {
                 windowSize={5}
                 removeClippedSubviews
               />
-              <View
-                style={{
-                  width: totalWidth,
-                  backgroundColor: theme.colors.surface,
-                  borderBottomWidth: 1,
-                  borderBottomColor: theme.colors.border,
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={{ color: theme.colors.text, fontSize: 13 }}>
-                  {`Itens nesta página: ${itens.length}${total !== null ? ` • Total: ${total}` : ""}`}
-                </Text>
                 <View
                   style={{
+                    width: totalWidth,
+                    backgroundColor: "#f3f6f6",
+                    borderTopWidth: 1,
+                    borderTopColor: "#d8dfe0",
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 6,
-                    backgroundColor: theme.colors.background,
-                    paddingVertical: 6,
-                    paddingHorizontal: 8,
-                    borderRadius: 8,
+                    justifyContent: "space-between",
                   }}
                 >
-                  <TouchableOpacity
-                    onPress={() => carregarPagina("prev")}
-                    disabled={currentPage === 1 || loading}
-                    style={{
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
-                      borderRadius: 6,
-                      borderWidth: 1,
-                      borderColor:
-                        currentPage === 1 || loading ? theme.colors.textMuted : theme.colors.border,
-                    }}
-                  >
-                    <Text style={{ color: theme.colors.border, fontSize: 12 }}>‹</Text>
-                  </TouchableOpacity>
-
-                  {(() => {
-                    const totalPages =
-                      total !== null ? Math.max(1, Math.ceil(total / pageSize)) : null;
-                    const pages: (number | "...")[] = [];
-                    if (!totalPages || totalPages <= 5) {
-                      const max = totalPages ?? currentPage + 1;
-                      for (let p = 1; p <= max; p++) pages.push(p);
-                    } else if (currentPage <= 3) {
-                      pages.push(1, 2, 3, "...", totalPages);
-                    } else if (currentPage >= totalPages - 2) {
-                      pages.push(1, "...", totalPages - 2, totalPages - 1, totalPages);
-                    } else {
-                      pages.push(
-                        1,
-                        "...",
-                        currentPage - 1,
-                        currentPage,
-                        currentPage + 1,
-                        "...",
-                        totalPages
-                      );
-                    }
-                    return pages.map((p, idx) =>
-                      p === "..." ? (
-                        <Text key={`dots-${idx}`} style={{ color: theme.colors.border, fontSize: 12 }}>
-                          ...
-                        </Text>
-                      ) : (
-                        <TouchableOpacity
-                          key={p}
-                          onPress={() => carregarPaginaNumero(p)}
-                          disabled={p === currentPage || loading}
-                          style={{
-                            minWidth: 28,
-                            alignItems: "center",
-                            paddingVertical: 6,
-                            paddingHorizontal: 8,
-                            borderRadius: 6,
-                            backgroundColor: p === currentPage ? theme.colors.accent : "transparent",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: p === currentPage ? "#ffffff" : theme.colors.border,
-                              fontSize: 12,
-                              fontWeight: p === currentPage ? "700" : "500",
-                            }}
-                          >
-                            {p}
-                          </Text>
-                        </TouchableOpacity>
-                      )
-                    );
-                  })()}
-
-                  <TouchableOpacity
-                    onPress={() => carregarPagina("next")}
-                    disabled={!hasNext || loading}
-                    style={{
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
-                      borderRadius: 6,
-                      borderWidth: 1,
-                      borderColor: !hasNext || loading ? theme.colors.textMuted : theme.colors.border,
-                    }}
-                  >
-                    <Text style={{ color: theme.colors.border, fontSize: 12 }}>›</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <ListChecks color="#1a9d84" size={18} />
+                    <Text style={{ color: "#23313b", fontSize: 13 }}>
+                      {`Itens nesta página: `}
+                      <Text style={{ fontWeight: "700" }}>{itens.length}</Text>
+                      {total !== null ? (
+                        <Text>{`   •   Total: `}<Text style={{ fontWeight: "700" }}>{total}</Text></Text>
+                      ) : null}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => carregarPagina("prev")}
+                      disabled={currentPage === 1 || loading}
+                      style={{ opacity: currentPage === 1 || loading ? 0.35 : 1 }}
+                    >
+                      <ChevronLeft color="#1a9d84" size={20} />
+                    </TouchableOpacity>
+                    <Text style={{ color: "#2b3b46", fontWeight: "700" }}>{currentPage}</Text>
+                    <TouchableOpacity
+                      onPress={() => carregarPagina("next")}
+                      disabled={!hasNext || loading}
+                      style={{ opacity: !hasNext || loading ? 0.35 : 1 }}
+                    >
+                      <ChevronRight color="#1a9d84" size={20} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
             </ScrollView>
           </View>
-        
-      )}
-      
+        )}
 
-      <View style={{ width: "92%", marginTop: 12, marginBottom: 16 }}></View>
-
-      <View style={{ width: "92%", marginTop: 12, marginBottom: 16 }}>
-        <TouchableOpacity
-          style={[
-            styles.secondButton,
-            exportando ? { opacity: 0.6 } : null,
-          ]}
-          onPress={exportarXLSX}
-          disabled={exportando}
-        >
-          <Text style={[styles.secondButtonText, { marginBottom: 16 }]}>
-            {exportando ? "Exportando... aguarde" : "Exportar XLSX"}
-          </Text>
-        </TouchableOpacity>
-        {exportando ? (
-          <Text style={{ color: theme.colors.textMuted, marginTop: 6, fontSize: 12 }}>
-            Buscando todos os itens no banco de dados.
-          </Text>
-        ) : null}
+        <View style={{ marginTop: 10 }}>
+          <TouchableOpacity
+            style={[
+              styles.secondButton,
+              exportando ? { opacity: 0.6 } : null,
+              { backgroundColor: "#e7eeee", borderRadius: 14 },
+            ]}
+            onPress={exportarXLSX}
+            disabled={exportando}
+          >
+            <Text style={[styles.secondButtonText, { color: "#167e67" }]}>
+              {exportando ? "Exportando... aguarde" : "Exportar XLSX"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 
 }

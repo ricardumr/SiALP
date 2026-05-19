@@ -70,6 +70,7 @@ export default function Conferencia_inventario() {
   const [editingConference, setEditingConference] = useState<any>(null);
   const [adm, setAdm] = useState<boolean>(false);
   const [admLoaded, setAdmLoaded] = useState<boolean>(false);
+  const [bancoId, setBancoId] = useState<string | null>(null);
   const [adminUids, setAdminUids] = useState<string[]>(routeAdminUids);
   const [canEdit, setCanEdit] = useState<boolean>(true);
   const [observationModalVisible, setObservationModalVisible] = useState(false);
@@ -96,6 +97,8 @@ export default function Conferencia_inventario() {
     }>
   >([]);
   const currentUid = auth.currentUser?.uid ?? "";
+  const [currentUserNome, setCurrentUserNome] = useState("");
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
   const normalizeValue = React.useCallback(
     (value: string) => String(value || "").trim().toLowerCase(),
     []
@@ -123,15 +126,9 @@ export default function Conferencia_inventario() {
   );
 
   const safeGoBack = React.useCallback(() => {
-    // evita warning quando não há tela anterior
+    // Sempre retorna para a lista de salas de conferência
     // @ts-ignore
-    if (navigation?.canGoBack && navigation.canGoBack()) {
-      // @ts-ignore
-      navigation.goBack();
-    } else {
-      // @ts-ignore
-      navigation.navigate("Conferencia de inventário" as never);
-    }
+    navigation.navigate("Conferencia de inventário" as never);
   }, [navigation]);
   
 
@@ -157,7 +154,13 @@ export default function Conferencia_inventario() {
           const salaNome = String(data?.sala || "").trim();
           if (!adm && !visibleSalaNames.has(salaNome)) return;
           // filtra por sala no cliente se necessário
-          if (filterSala && data?.sala !== filterSala) return;
+          if (
+            filterSala &&
+            String(data?.sala || "").trim().toLowerCase() !==
+              String(filterSala || "").trim().toLowerCase()
+          ) {
+            return;
+          }
           ItensLista.push({ ...data, key: documento.id });
         });
         setItens(ItensLista);
@@ -203,9 +206,12 @@ export default function Conferencia_inventario() {
 
   // Se navegado para editar conferência existente, armazena
   useEffect(() => {
+    const uid = auth.currentUser?.uid;
     getCurrentUserContext().then((context) => {
       if (!context) return;
       setAdm(context.adm);
+      setCurrentUserNome(context.nome ?? "");
+      setCurrentUserEmail(context.email ?? "");
       setBancoId(context.bancoId);
       firestore
         .collection("Usuario")
@@ -1350,7 +1356,7 @@ const localStyles = StyleSheet.create({
   },
   topBar: {
     width: "100%",
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     paddingHorizontal: 18,
     paddingTop: 8,
   },
